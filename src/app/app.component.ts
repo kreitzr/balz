@@ -57,7 +57,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private enableAudioCapture = () => {
-    let audio = document.querySelector('audio');
+    // let audio = document.querySelector('audio');
 
     if (this.recordEnabled) {
       navigator.getUserMedia(
@@ -65,8 +65,8 @@ export class AppComponent implements OnInit, OnDestroy {
           audio: true
         },
         (stream) => {
-          audio.src = URL.createObjectURL(stream);
-          audio.play();
+          // audio.src = URL.createObjectURL(stream);
+          // audio.play();
 
           this.audioStream = stream;
 
