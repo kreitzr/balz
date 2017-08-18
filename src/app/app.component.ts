@@ -20,12 +20,12 @@ export class AppComponent implements OnInit, OnDestroy {
   name = 'Blend4Web Test';
   modules: Blend4WebModule[];
 
-  interval1 = 500;
-  interval2 = 500;
+  interval1 = 1000; interval2 = 1000;
 
   recordEnabled = false;
 
-  private subs = {};
+  // private subs = {};
+  private ballTimers = {};
 
   private balls: BallsModule = new BallsModule();
 
@@ -40,20 +40,28 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private initScene = () => {
-    this.subs['Color1'] = Observable.timer(0, 2000).subscribe(() => {
-      this.balls.genBall('Color1');
-    });
+    this.setBallTimer('Color1', this.interval1);
+    this.setBallTimer('Color2', this.interval2);
 
-    this.subs['Color2'] = Observable.timer(1000, 2000).subscribe(() => {
-      this.balls.genBall('Color2');
-    });
+    // this.subs['Color1'] = Observable.timer(0, 2000).subscribe(() => {
+    //   this.balls.genBall('Color1');
+    // });
+
+    // this.subs['Color2'] = Observable.timer(1000, 2000).subscribe(() => {
+    //   this.balls.genBall('Color2');
+    // });
   }
 
-  private initTimers(id: string, value: number) {
-    this.subs[id].unsubscribe();
-    this.subs[id] = Observable.timer(value / 2, value).subscribe(() => {
-      this.balls.genBall(id);
-    });
+  // private initTimers(id: string, value: number) {
+  //   this.subs[id].unsubscribe();
+  //   this.subs[id] = Observable.timer(value / 2, value).subscribe(() => {
+  //     this.balls.genBall(id);
+  //   });
+  // }
+
+  private setBallTimer(id: string, value: number) {
+    clearInterval(this.ballTimers[id]);
+    this.ballTimers[id] = setInterval(this.balls.genBall, value, id);
   }
 
   private enableAudioCapture = () => {
@@ -70,7 +78,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
           this.audioStream = stream;
 
-          let source = this.audioContext.createMediaStreamSource(stream);
+          const source = this.audioContext.createMediaStreamSource(stream);
           source.connect(this.analyser);
           // analyser.connect(this.audioContext.destination);
 
@@ -92,43 +100,47 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.analyser.fftSize = 32;
-    this.analyser.minDecibels = -50;
-    this.analyser.maxDecibels = 0;
+    // this.analyser.minDecibels = -70;
+    // this.analyser.maxDecibels = 0;
 
-    let bufferLength = this.analyser.frequencyBinCount;
-    let dataArray = new Uint8Array(bufferLength);
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
     // let dataArray = new Float32Array(bufferLength);
 
     this.analyser.getByteFrequencyData(dataArray);
     // this.analyser.getFloatFrequencyData(dataArray);
 
-    let getAverage = (data: Uint8Array) => {
+    const avg = () => {
       let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        sum += data[i];
-        return sum / data.length;
-      }
-    };
-
-    let avg = getAverage(dataArray);
-    if (avg > 0 && avg < 6.5) {
-      // console.log(avg);
-      this.balls.genBall('Color1');
-    } else if (avg > 6.5) {
-      this.balls.genBall('Color2');
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+        return sum / dataArray.length;
+      };
     }
+
+    // if (avg > 0 && avg < 6.5) {
+    //   // console.log(avg);
+    //   this.balls.genBall('Color1');
+    // } else if (avg > 6.5) {
+    //   this.balls.genBall('Color2');
+    // }
+
+    this.setBallTimer('Color1', avg());
   }
 
   sliderChanged(e: any) {
-    this.initTimers(e.target.id, e.target.value);
+    // this.initTimers(e.target.id, e.target.value);
+    this.setBallTimer(e.target.id, e.target.value);
   }
 
   recordModeChanged() {
     if (this.recordEnabled) {
       // Clear ball timers
-      Object.keys(this.subs).forEach(key => {
-        this.subs[key].unsubscribe();
+      Object.keys(this.ballTimers).forEach(key => {
+        clearInterval(this.ballTimers[key]);
       });
+    } else {
+      this.initScene();
     }
 
     this.enableAudioCapture();
